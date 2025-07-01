@@ -157,7 +157,7 @@
       box-shadow: none;
       z-index: 1;
       pointer-events: none;
-      transition: left 0.2s, top 0.2s, width 0.5s, height 0.5s, background 0.5s, box-shadow 0.5s, z-index 0.5s, opacity 0.5s;
+      transition: left 0.2s ease, top 0.2s ease, width 0.5s, height 0.5s, background 0.5s, box-shadow 0.5s, z-index 0.5s, opacity 0.5s;
       animation: moon-move 6s infinite alternate ease-in-out;
       display: block !important;
     }
@@ -330,10 +330,50 @@
     body.light .moon-svg-phase {
       filter: drop-shadow(0 0 16px #ffe066cc);
     }
+    /* Loading overlay */
+    #loading-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: transparent;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      transition: opacity 0.4s;
+      opacity: 1;
+      pointer-events: all;
+    }
+    #loading-overlay.hide {
+      opacity: 0;
+      pointer-events: none;
+    }
+    .dot-loader {
+      display: flex;
+      gap: 0.5em;
+      align-items: center;
+      justify-content: center;
+    }
+    .dot-loader span {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--loader-dot, #ffe066);
+      display: inline-block;
+      animation: dotPulse 0.9s infinite cubic-bezier(.6,.2,.4,1);
+    }
+    .dot-loader span:nth-child(2) { animation-delay: 0.15s; }
+    .dot-loader span:nth-child(3) { animation-delay: 0.3s; }
+    body.light .dot-loader span { --loader-dot: #ffe066; }
+    body.dark .dot-loader span { --loader-dot: #bfcfff; }
+    @keyframes dotPulse {
+      0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); }
+      40% { opacity: 1; transform: scale(1.2); }
+    }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/suncalc@1.9.0/suncalc.js"></script>
 </head>
 <body>
+  <div id="loading-overlay"><div class="dot-loader"><span></span><span></span><span></span></div></div>
   <div class="container">
     <div class="theme-switch">
       <span style="font-size:1.2em;">🌙</span>
@@ -346,6 +386,7 @@
     <h1><span class="moon-phase-icon" id="moonPhaseIcon"></span>Lunar Islamic Calendar</h1>
     <div class="select-wrapper">
       <label>Time Zone:
+        <span style="display:inline-block;width:1.50em;"></span>
         <select id="timezone"></select>
       </label>
     </div>
@@ -361,8 +402,29 @@
     // Theme switching logic
     const themeToggle = document.getElementById('themeToggle');
     // For smooth animation
-    let targetMoonX = null, targetMoonY = null, moonAnimFrame = null;
-    let targetStarTransforms = [], starAnimFrame = null;
+    let targetMoonX = null, targetMoonY = null;
+    let moonX = null, moonY = null;
+    let targetStarTransforms = [], starTransforms = [];
+    let mouseX = 0.5, mouseY = 0.5;
+    let moon, stars = [];
+    let animFrame = null;
+    let lastTheme = null;
+    // Loading overlay
+    window.addEventListener('DOMContentLoaded', () => {
+      // Detect preferred theme or saved theme
+      const savedTheme = localStorage.getItem('theme');
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const initialTheme = savedTheme || (prefersDark ? 'dark' : 'light');
+      setTheme(initialTheme);
+      // Set loader color to match theme
+      document.body.classList.add(initialTheme);
+      setTimeout(() => {
+        document.getElementById('loading-overlay').classList.add('hide');
+        setTimeout(() => {
+          document.getElementById('loading-overlay').style.display = 'none';
+        }, 400);
+      }, 200);
+    });
 
     function setTheme(theme) {
       document.body.className = theme;
@@ -371,25 +433,19 @@
       // Remove old bg
       document.querySelectorAll('.moon, .sun, .star, .star-dark').forEach(e => e.remove());
       // Always add the moon for both themes
-      const moon = document.createElement('div');
+      moon = document.createElement('div');
       moon.className = 'moon';
-      if (theme === 'dark') {
-        moon.style.width = '120px';
-        moon.style.height = '120px';
-      } else {
-        moon.style.width = '120px';
-        moon.style.height = '120px';
-      }
-      // Initial moon position
+      moon.style.width = '120px';
+      moon.style.height = '120px';
       moon.style.left = 'calc(80vw - 60px)';
       moon.style.top = 'calc(10vh + 20px)';
       document.body.appendChild(moon);
-      // Add stars (color depends on theme)
+      // Add fewer stars (performance)
       const isDark = theme === 'dark';
-      for (let i = 0; i < 40; i++) {
+      stars = [];
+      for (let i = 0; i < 24; i++) {
         const star = document.createElement('div');
         star.className = isDark ? 'star-dark' : 'star';
-        // Make stars bigger in both themes, especially dark
         const size = isDark ? (Math.random() * 4 + 3) : (Math.random() * 4 + 3);
         star.style.width = `${size}px`;
         star.style.height = `${size}px`;
@@ -398,12 +454,17 @@
         star.style.opacity = 0.7 + Math.random() * 0.3;
         star.style.animationDuration = `${1.5 + Math.random()}s`;
         document.body.appendChild(star);
+        stars.push(star);
       }
       updateMoonPhaseMoon();
       // Reset animation targets
-      targetMoonX = null;
-      targetMoonY = null;
-      targetStarTransforms = [];
+      moonX = null; moonY = null;
+      targetMoonX = 0.5; targetMoonY = 0.5;
+      mouseX = 0.5; mouseY = 0.5;
+      targetStarTransforms = Array(stars.length).fill('translate(0px,0px)');
+      starTransforms = Array(stars.length).fill('translate(0px,0px)');
+      lastTheme = theme;
+      updateLoaderTheme();
     }
     // Theme toggle event
     themeToggle.addEventListener('click', () => {
@@ -412,65 +473,48 @@
     });
     // Animate background on mouse move (moon follows in both themes)
     document.addEventListener('mousemove', e => {
-      const moon = document.querySelector('.moon');
-      const x = e.clientX / window.innerWidth;
-      const y = e.clientY / window.innerHeight;
+      mouseX = e.clientX / window.innerWidth;
+      mouseY = e.clientY / window.innerHeight;
+    });
+    function animateMoonAndStars() {
       // Animate moon
       if (moon) {
         if (document.body.className === 'dark') {
-          targetMoonX = 30 + x*60;
-          targetMoonY = 10 + y*60;
+          targetMoonX = 30 + mouseX*60;
+          targetMoonY = 10 + mouseY*60;
         } else {
-          targetMoonX = 60 + x*30;
-          targetMoonY = 5 + y*20;
+          targetMoonX = 60 + mouseX*30;
+          targetMoonY = 5 + mouseY*20;
         }
-        if (!moonAnimFrame) animateMoon();
+        if (moonX === null) moonX = targetMoonX;
+        if (moonY === null) moonY = targetMoonY;
+        // Smoother interpolation
+        moonX += (targetMoonX - moonX) * 0.4;
+        moonY += (targetMoonY - moonY) * 0.4;
+        moon.style.left = `calc(${moonX}vw - 60px)`;
+        moon.style.top = `calc(${moonY}vh + 0px)`;
       }
       // Animate stars
-      if (document.body.className === 'dark') {
-        const stars = document.querySelectorAll('.star-dark');
-        targetStarTransforms = Array.from(stars).map((star, i) => {
-          const dx = (x - 0.5) * 40 * (i%5);
-          const dy = (y - 0.5) * 40 * (i%7);
-          return `translate(${dx}px, ${dy}px)`;
-        });
-        if (!starAnimFrame) animateStars('star-dark');
-      } else if (document.body.className === 'light') {
-        const stars = document.querySelectorAll('.star');
-        targetStarTransforms = Array.from(stars).map((star, i) => {
-          const dx = (x - 0.5) * 40 * (i%5);
-          const dy = (y - 0.5) * 40 * (i%7);
-          return `translate(${dx}px, ${dy}px)`;
-        });
-        if (!starAnimFrame) animateStars('star');
-      }
-    });
-    function animateMoon() {
-      const moon = document.querySelector('.moon');
-      if (!moon || targetMoonX === null || targetMoonY === null) { moonAnimFrame = null; return; }
-      // Get current position
-      let currentLeft = parseFloat(moon.style.left.replace('vw','')) || 0;
-      let currentTop = parseFloat(moon.style.top.replace('vh','')) || 0;
-      // Lerp
-      currentLeft += (targetMoonX - currentLeft) * 0.25;
-      currentTop += (targetMoonY - currentTop) * 0.25;
-      moon.style.left = `calc(${currentLeft}vw - 60px)`;
-      moon.style.top = `calc(${currentTop}vh + 0px)`;
-      if (Math.abs(currentLeft - targetMoonX) > 0.1 || Math.abs(currentTop - targetMoonY) > 0.1) {
-        moonAnimFrame = requestAnimationFrame(animateMoon);
-      } else {
-        moonAnimFrame = null;
-      }
-    }
-    function animateStars(starClass) {
-      const stars = document.querySelectorAll('.' + starClass);
-      stars.forEach((star, i) => {
-        if (targetStarTransforms[i]) {
-          star.style.transform = targetStarTransforms[i];
+      if (stars && stars.length) {
+        for (let i = 0; i < stars.length; i++) {
+          let dx, dy;
+          if (document.body.className === 'dark') {
+            dx = (mouseX - 0.5) * 40 * (i%5);
+            dy = (mouseY - 0.5) * 40 * (i%7);
+          } else {
+            dx = (mouseX - 0.5) * 40 * (i%5);
+            dy = (mouseY - 0.5) * 40 * (i%7);
+          }
+          if (!starTransforms[i]) starTransforms[i] = {x: 0, y: 0};
+          // Smoother interpolation
+          starTransforms[i].x += (dx - (starTransforms[i].x||0)) * 0.4;
+          starTransforms[i].y += (dy - (starTransforms[i].y||0)) * 0.4;
+          stars[i].style.transform = `translate(${starTransforms[i].x}px, ${starTransforms[i].y}px)`;
         }
-      });
-      starAnimFrame = requestAnimationFrame(() => animateStars(starClass));
+      }
+      animFrame = requestAnimationFrame(animateMoonAndStars);
     }
+    animateMoonAndStars();
     // Populate time zone select
     const tzSelect = document.getElementById('timezone');
     const tzs = Intl.supportedValuesOf ? Intl.supportedValuesOf('timeZone') : [Intl.DateTimeFormat().resolvedOptions().timeZone];
@@ -545,9 +589,9 @@
       const now = new Date();
       const times = SunCalc.getTimes(now, 21.4225, 39.8262); // Mecca
       const sunset = times.sunset;
-      gregorianDiv.textContent = `Current Gregorian Date/Time: ${formatDate(now, tz)}`;
+      gregorianDiv.textContent = `Current Gregorian: ${formatDate(now, tz)}`;
       sunsetDiv.textContent = `Sunset Today: ${formatDate(sunset, tz)}`;
-      islamicDiv.textContent = `Islamic (Lunar) Date/Time: ${getIslamicDate(now, sunset, tz)} (from sunset to sunset)`;
+      islamicDiv.textContent = `Islamic (Lunar): ${getIslamicDate(now, sunset, tz)} (from sunset to sunset)`;
     }
     setInterval(update, 1000);
     tzSelect.addEventListener('input', update);
@@ -643,7 +687,18 @@
       renderMoonPhaseMoon(phase);
     }
     setInterval(updateMoonPhaseMoon, 60 * 60 * 1000);
-    // Also update on theme switch
+    // Also update loader color on theme change
+    function updateLoaderTheme() {
+      const overlay = document.getElementById('loading-overlay');
+      if (!overlay) return;
+      // No need to update dot color, CSS handles it by theme class
+    }
+    // Call on theme switch
+    const origSetTheme = setTheme;
+    setTheme = function(theme) {
+      origSetTheme(theme);
+      updateLoaderTheme();
+    }
   </script>
 </body>
 </html> 
