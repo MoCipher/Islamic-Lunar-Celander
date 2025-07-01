@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lunar Islamic Calendar</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:400,700&display=swap">
+  <style>
+    body {
+      font-family: 'Roboto', Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.5s;
+      overflow: hidden;
+    }
+    .container {
+      background: rgba(40,44,52,0.92);
+      padding: 2rem 2.5rem;
+      border-radius: 20px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.35);
+      max-width: 420px;
+      width: 100%;
+      position: relative;
+      z-index: 2;
+      transition: background 0.5s, box-shadow 0.5s;
+    }
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 1.5rem;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.18);
+      transition: color 0.5s;
+    }
+    label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-size: 1rem;
+    }
+    select {
+      width: 100%;
+      padding: 0.5rem 0.8rem;
+      margin-bottom: 1.2rem;
+      border-radius: 10px;
+      border: none;
+      background: #23272f;
+      color: #fff;
+      font-size: 1.08rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      appearance: none;
+      -webkit-appearance: none;
+      transition: background 0.5s, color 0.5s;
+      outline: none;
+      cursor: pointer;
+      position: relative;
+    }
+    select:focus {
+      box-shadow: 0 0 0 2px #61dafb;
+    }
+    .select-wrapper {
+      position: relative;
+      margin-bottom: 1.2rem;
+    }
+    .select-wrapper::after {
+      content: '';
+      position: absolute;
+      right: 18px;
+      top: 50%;
+      width: 12px;
+      height: 12px;
+      pointer-events: none;
+      background: url('data:image/svg+xml;utf8,<svg fill="white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>') no-repeat center center/contain;
+      transform: translateY(-50%);
+      transition: filter 0.5s;
+    }
+    .info {
+      margin-bottom: 1.2rem;
+      font-size: 1.08rem;
+      background: #23272f;
+      padding: 0.7rem 1rem;
+      border-radius: 10px;
+      word-break: break-all;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      transition: background 0.5s, color 0.5s;
+    }
+    .note {
+      font-size: 0.97rem;
+      color: #aaa;
+      margin-top: 1.2rem;
+      text-align: center;
+      transition: color 0.5s;
+    }
+    .theme-switch {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      margin-bottom: 1.2rem;
+      gap: 0.7rem;
+    }
+    .theme-toggle {
+      width: 44px;
+      height: 24px;
+      border-radius: 12px;
+      background: #444;
+      position: relative;
+      cursor: pointer;
+      transition: background 0.5s;
+      border: 2px solid #333;
+      display: flex;
+      align-items: center;
+      padding: 2px;
+    }
+    .theme-toggle .toggle-ball {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #fff;
+      position: absolute;
+      left: 2px;
+      top: 2px;
+      transition: left 0.4s, background 0.5s;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+    }
+    .theme-toggle.light .toggle-ball {
+      left: 22px;
+      background: #ffe066;
+      box-shadow: 0 2px 8px #ffe06644;
+    }
+    .theme-toggle.light {
+      background: #ffe066;
+      border-color: #ffe066;
+    }
+    .theme-toggle .icon {
+      position: absolute;
+      width: 16px;
+      height: 16px;
+      top: 4px;
+      left: 6px;
+      pointer-events: none;
+      opacity: 0.7;
+      transition: opacity 0.5s;
+    }
+    .theme-toggle.light .icon {
+      left: 24px;
+      opacity: 1;
+    }
+    /* Animated background for dark theme */
+    .moon {
+      position: fixed;
+      /* width/height set by theme */
+      border-radius: 50%;
+      background: none;
+      box-shadow: none;
+      z-index: 1;
+      pointer-events: none;
+      transition: left 0.2s, top 0.2s, width 0.5s, height 0.5s, background 0.5s, box-shadow 0.5s, z-index 0.5s, opacity 0.5s;
+      animation: moon-move 6s infinite alternate ease-in-out;
+      display: block !important;
+    }
+    body.dark .moon {
+      display: block;
+      width: 120px;
+      height: 120px;
+      /* SVG will be injected for phase */
+    }
+    .moon-svg-phase {
+      width: 100%;
+      height: 100%;
+      display: block;
+      filter: drop-shadow(0 0 24px #bfcfffcc);
+      transition: filter 0.5s;
+    }
+    .sun {
+      position: fixed;
+      width: 90px;
+      height: 90px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 60% 40%, #fffbe4 40%, #ffe066 70%, #ffd700 100%);
+      box-shadow: 0 0 80px 30px #ffd70055, 0 0 0 8px #fffde455;
+      z-index: 0;
+      pointer-events: none;
+      transition: left 0.5s, top 0.5s, background 0.5s, box-shadow 0.5s;
+      animation: sun-move 6s infinite alternate ease-in-out;
+      display: none;
+      overflow: visible;
+    }
+    body.light .sun {
+      display: none;
+    }
+    @keyframes moon-move {
+      0% { transform: translateY(0) scale(1); }
+      100% { transform: translateY(-20px) scale(1.05); }
+    }
+    @keyframes sun-move {
+      0% { transform: scale(1) rotate(0deg); }
+      100% { transform: scale(1.05) rotate(10deg); }
+    }
+    .sun-rays {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 140px;
+      height: 140px;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      z-index: -1;
+      display: block;
+    }
+    .sun-ray {
+      position: absolute;
+      width: 8px;
+      height: 40px;
+      background: linear-gradient(to bottom, #ffd700 80%, transparent 100%);
+      left: 50%;
+      top: 50%;
+      transform-origin: bottom center;
+      border-radius: 4px;
+      opacity: 0.7;
+      animation: ray-anim 2s infinite alternate;
+      filter: blur(0.5px);
+    }
+    @keyframes ray-anim {
+      0% { opacity: 0.7; }
+      100% { opacity: 1; }
+    }
+    @media (max-width: 500px) {
+      .container { padding: 1rem 0.5rem; }
+    }
+    /* Light theme overrides */
+    body.light {
+      background: linear-gradient(120deg, #e3e8f0 0%, #cfd8e6 100%);
+    }
+    body.light .container {
+      background: rgba(255,255,255,0.95);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.10);
+    }
+    body.light h1 {
+      color: #222;
+    }
+    body.light .info {
+      background: #f3f6fa;
+      color: #222;
+    }
+    body.light .note {
+      color: #666;
+    }
+    body.light select {
+      background: #f3f6fa;
+      color: #222;
+    }
+    body.light .select-wrapper::after {
+      filter: invert(1);
+    }
+    body.dark {
+      background: linear-gradient(120deg, #181c24 0%, #23273a 100%);
+      color: #fff;
+    }
+    body.dark h1 {
+      color: #fff;
+    }
+    body.dark .info {
+      color: #fff;
+      background: #23273a;
+    }
+    body.dark .note {
+      color: #e0e6ff;
+    }
+    body.dark select {
+      background: #23273a;
+      color: #fff;
+    }
+    body.dark .select-wrapper::after {
+      filter: none;
+    }
+    /* Webkit support for custom select */
+    select::-webkit-input-placeholder { color: #bbb; }
+    select::-webkit-selection { background: #ffe066; color: #222; }
+    /* Moon phase icon */
+    .moon-phase-icon {
+      display: inline-block;
+      vertical-align: middle;
+      width: 38px;
+      height: 38px;
+      margin-right: 0.5em;
+      transition: filter 0.5s;
+    }
+    .moon-phase-svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+    /* Light theme stars */
+    .star {
+      position: fixed;
+      border-radius: 50%;
+      background: #ffe066;
+      opacity: 0.8;
+      pointer-events: none;
+      z-index: 0;
+      animation: twinkle 2s infinite alternate;
+      will-change: opacity, transform;
+      box-shadow: 0 0 16px 4px #ffe06699;
+    }
+    @keyframes twinkle {
+      from { opacity: 0.7; }
+      to { opacity: 1; }
+    }
+    /* Dark theme stars */
+    .star-dark {
+      position: fixed;
+      border-radius: 50%;
+      background: #bfcfff;
+      opacity: 0.8;
+      pointer-events: none;
+      z-index: 0;
+      animation: twinkle 2s infinite alternate;
+      will-change: opacity, transform;
+      box-shadow: 0 0 8px 2px #bfcfff99;
+    }
+    /* Light theme moon (uses same .moon class, but different SVG style) */
+    body.light .moon {
+      display: block;
+      width: 120px;
+      height: 120px;
+    }
+    body.light .moon-svg-phase {
+      filter: drop-shadow(0 0 16px #ffe066cc);
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/suncalc@1.9.0/suncalc.js"></script>
+</head>
+<body>
+  <div class="container">
+    <div class="theme-switch">
+      <span style="font-size:1.2em;">🌙</span>
+      <div class="theme-toggle" id="themeToggle">
+        <div class="toggle-ball"></div>
+        <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="6" fill="#ffe066"/></svg>
+      </div>
+      <span style="font-size:1.2em;">🌟</span>
+    </div>
+    <h1><span class="moon-phase-icon" id="moonPhaseIcon"></span>Lunar Islamic Calendar</h1>
+    <div class="select-wrapper">
+      <label>Time Zone:
+        <select id="timezone"></select>
+      </label>
+    </div>
+    <div class="info" id="gregorian"></div>
+    <div class="info" id="sunset"></div>
+    <div class="info" id="islamic"></div>
+    <div class="note">
+      Islamic day starts at local sunset. Every 3 years, the 13th month is deleted.<br>
+      <span style="font-size:0.9em;">(Timezone changes update instantly)</span>
+    </div>
+  </div>
+  <script>
+    // Theme switching logic
+    const themeToggle = document.getElementById('themeToggle');
+    // For smooth animation
+    let targetMoonX = null, targetMoonY = null, moonAnimFrame = null;
+    let targetStarTransforms = [], starAnimFrame = null;
+
+    function setTheme(theme) {
+      document.body.className = theme;
+      localStorage.setItem('theme', theme);
+      themeToggle.classList.toggle('light', theme === 'light');
+      // Remove old bg
+      document.querySelectorAll('.moon, .sun, .star, .star-dark').forEach(e => e.remove());
+      // Always add the moon for both themes
+      const moon = document.createElement('div');
+      moon.className = 'moon';
+      if (theme === 'dark') {
+        moon.style.width = '120px';
+        moon.style.height = '120px';
+      } else {
+        moon.style.width = '120px';
+        moon.style.height = '120px';
+      }
+      // Initial moon position
+      moon.style.left = 'calc(80vw - 60px)';
+      moon.style.top = 'calc(10vh + 20px)';
+      document.body.appendChild(moon);
+      // Add stars (color depends on theme)
+      const isDark = theme === 'dark';
+      for (let i = 0; i < 40; i++) {
+        const star = document.createElement('div');
+        star.className = isDark ? 'star-dark' : 'star';
+        // Make stars bigger in both themes, especially dark
+        const size = isDark ? (Math.random() * 4 + 3) : (Math.random() * 4 + 3);
+        star.style.width = `${size}px`;
+        star.style.height = `${size}px`;
+        star.style.left = `${Math.random() * 100}vw`;
+        star.style.top = `${Math.random() * 100}vh`;
+        star.style.opacity = 0.7 + Math.random() * 0.3;
+        star.style.animationDuration = `${1.5 + Math.random()}s`;
+        document.body.appendChild(star);
+      }
+      updateMoonPhaseMoon();
+      // Reset animation targets
+      targetMoonX = null;
+      targetMoonY = null;
+      targetStarTransforms = [];
+    }
+    // Theme toggle event
+    themeToggle.addEventListener('click', () => {
+      const newTheme = document.body.className === 'dark' ? 'light' : 'dark';
+      setTheme(newTheme);
+    });
+    // Animate background on mouse move (moon follows in both themes)
+    document.addEventListener('mousemove', e => {
+      const moon = document.querySelector('.moon');
+      const x = e.clientX / window.innerWidth;
+      const y = e.clientY / window.innerHeight;
+      // Animate moon
+      if (moon) {
+        if (document.body.className === 'dark') {
+          targetMoonX = 30 + x*60;
+          targetMoonY = 10 + y*60;
+        } else {
+          targetMoonX = 60 + x*30;
+          targetMoonY = 5 + y*20;
+        }
+        if (!moonAnimFrame) animateMoon();
+      }
+      // Animate stars
+      if (document.body.className === 'dark') {
+        const stars = document.querySelectorAll('.star-dark');
+        targetStarTransforms = Array.from(stars).map((star, i) => {
+          const dx = (x - 0.5) * 40 * (i%5);
+          const dy = (y - 0.5) * 40 * (i%7);
+          return `translate(${dx}px, ${dy}px)`;
+        });
+        if (!starAnimFrame) animateStars('star-dark');
+      } else if (document.body.className === 'light') {
+        const stars = document.querySelectorAll('.star');
+        targetStarTransforms = Array.from(stars).map((star, i) => {
+          const dx = (x - 0.5) * 40 * (i%5);
+          const dy = (y - 0.5) * 40 * (i%7);
+          return `translate(${dx}px, ${dy}px)`;
+        });
+        if (!starAnimFrame) animateStars('star');
+      }
+    });
+    function animateMoon() {
+      const moon = document.querySelector('.moon');
+      if (!moon || targetMoonX === null || targetMoonY === null) { moonAnimFrame = null; return; }
+      // Get current position
+      let currentLeft = parseFloat(moon.style.left.replace('vw','')) || 0;
+      let currentTop = parseFloat(moon.style.top.replace('vh','')) || 0;
+      // Lerp
+      currentLeft += (targetMoonX - currentLeft) * 0.25;
+      currentTop += (targetMoonY - currentTop) * 0.25;
+      moon.style.left = `calc(${currentLeft}vw - 60px)`;
+      moon.style.top = `calc(${currentTop}vh + 0px)`;
+      if (Math.abs(currentLeft - targetMoonX) > 0.1 || Math.abs(currentTop - targetMoonY) > 0.1) {
+        moonAnimFrame = requestAnimationFrame(animateMoon);
+      } else {
+        moonAnimFrame = null;
+      }
+    }
+    function animateStars(starClass) {
+      const stars = document.querySelectorAll('.' + starClass);
+      stars.forEach((star, i) => {
+        if (targetStarTransforms[i]) {
+          star.style.transform = targetStarTransforms[i];
+        }
+      });
+      starAnimFrame = requestAnimationFrame(() => animateStars(starClass));
+    }
+    // Populate time zone select
+    const tzSelect = document.getElementById('timezone');
+    const tzs = Intl.supportedValuesOf ? Intl.supportedValuesOf('timeZone') : [Intl.DateTimeFormat().resolvedOptions().timeZone];
+    tzs.forEach(tz => {
+      const opt = document.createElement('option');
+      opt.value = tz;
+      opt.textContent = tz;
+      tzSelect.appendChild(opt);
+    });
+    tzSelect.value = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    // Elements
+    const gregorianDiv = document.getElementById('gregorian');
+    const sunsetDiv = document.getElementById('sunset');
+    const islamicDiv = document.getElementById('islamic');
+    // Helper: format date in given time zone
+    function formatDate(date, tz) {
+      return new Date(date).toLocaleString('en-GB', { timeZone: tz, hour12: false });
+    }
+    // Custom Islamic lunar calendar logic
+    function getIslamicDate(now, sunset, tz) {
+      let islamicDayStart = now >= sunset ? sunset : new Date(sunset.getTime() - 24*3600*1000);
+      const islamicEpoch = new Date(Date.UTC(622, 6, 19, 18, 0, 0));
+      const msPerDay = 24*60*60*1000;
+      const daysSinceEpoch = Math.floor((islamicDayStart.getTime() - islamicEpoch.getTime()) / msPerDay);
+      let days = daysSinceEpoch;
+      let year = 1;
+      let month = 1;
+      let day = 1;
+      const monthNames = [
+        'al-Muḥarram',
+        'Ṣafar',
+        'Rabīʿ al-ʾAwwal',
+        'Rabīʿ ath-Thānī',
+        'Jumādā al-ʾŪlā',
+        'Jumādā ath-Thāniyah',
+        'Rajab',
+        'Shaʿbān',
+        'Ramaḍān',
+        'Shawwāl',
+        'Ḏū al-Qaʿdah',
+        'Ḏū al-Ḥijjah'
+      ];
+      while (true) {
+        const isShortYear = year % 3 === 0;
+        const monthsInYear = isShortYear ? 12 : 13;
+        let monthLens = [];
+        for (let m = 0; m < monthsInYear; m++) {
+          monthLens.push(m % 2 === 0 ? 30 : 29);
+        }
+        const yearLen = monthLens.reduce((a, b) => a + b, 0);
+        if (days < yearLen) {
+          for (let m = 0; m < monthsInYear; m++) {
+            if (days < monthLens[m]) {
+              month = m + 1;
+              day = days + 1;
+              break;
+            } else {
+              days -= monthLens[m];
+            }
+          }
+          break;
+        } else {
+          days -= yearLen;
+          year++;
+        }
+      }
+      let monthName = monthNames[month-1] || `Month ${month}`;
+      return `Year ${year}, ${monthName}${(year % 3 === 0 && month === 13) ? ' (deleted this year)' : ''}, Day ${day}`;
+    }
+    function update() {
+      const tz = tzSelect.value;
+      const now = new Date();
+      const times = SunCalc.getTimes(now, 21.4225, 39.8262); // Mecca
+      const sunset = times.sunset;
+      gregorianDiv.textContent = `Current Gregorian Date/Time: ${formatDate(now, tz)}`;
+      sunsetDiv.textContent = `Sunset Today: ${formatDate(sunset, tz)}`;
+      islamicDiv.textContent = `Islamic (Lunar) Date/Time: ${getIslamicDate(now, sunset, tz)} (from sunset to sunset)`;
+    }
+    setInterval(update, 1000);
+    tzSelect.addEventListener('input', update);
+    update();
+    // Moon phase icon logic
+    function renderMoonPhaseIcon(phase) {
+      // phase: 0=new, 0.25=first quarter, 0.5=full, 0.75=last quarter
+      // We'll use SVG masking for crescent/gibbous
+      // Animate with CSS filter for a subtle glow
+      let svg = '';
+      if (phase < 0.02 || phase > 0.98) {
+        // New moon
+        svg = `<svg class="moon-phase-svg" viewBox="0 0 40 40"><circle cx="20" cy="20" r="16" fill="#222" stroke="#bfcfff" stroke-width="2"/></svg>`;
+      } else if (phase < 0.24) {
+        // Waxing crescent
+        svg = `<svg class="moon-phase-svg" viewBox="0 0 40 40"><circle cx="20" cy="20" r="16" fill="#bfcfff"/><path d="M20 4 A16 16 0 0 1 20 36 A12 16 0 0 0 20 4" fill="#222"/></svg>`;
+      } else if (phase < 0.26) {
+        // First quarter
+        svg = `<svg class="moon-phase-svg" viewBox="0 0 40 40"><circle cx="20" cy="20" r="16" fill="#bfcfff"/><rect x="20" y="4" width="16" height="32" fill="#222"/></svg>`;
+      } else if (phase < 0.49) {
+        // Waxing gibbous
+        svg = `<svg class="moon-phase-svg" viewBox="0 0 40 40"><circle cx="20" cy="20" r="16" fill="#bfcfff"/><path d="M20 4 A16 16 0 0 1 20 36 A8 16 0 0 0 20 4" fill="#222"/></svg>`;
+      } else if (phase < 0.51) {
+        // Full moon
+        svg = `<svg class="moon-phase-svg" viewBox="0 0 40 40"><circle cx="20" cy="20" r="16" fill="#fff" stroke="#bfcfff" stroke-width="2"/></svg>`;
+      } else if (phase < 0.74) {
+        // Waning gibbous
+        svg = `<svg class="moon-phase-svg" viewBox="0 0 40 40"><circle cx="20" cy="20" r="16" fill="#bfcfff"/><path d="M20 4 A16 16 0 0 0 20 36 A8 16 0 0 1 20 4" fill="#222"/></svg>`;
+      } else if (phase < 0.76) {
+        // Last quarter
+        svg = `<svg class="moon-phase-svg" viewBox="0 0 40 40"><circle cx="20" cy="20" r="16" fill="#bfcfff"/><rect x="4" y="4" width="16" height="32" fill="#222"/></svg>`;
+      } else {
+        // Waning crescent
+        svg = `<svg class="moon-phase-svg" viewBox="0 0 40 40"><circle cx="20" cy="20" r="16" fill="#bfcfff"/><path d="M20 4 A16 16 0 0 0 20 36 A12 16 0 0 1 20 4" fill="#222"/></svg>`;
+      }
+      document.getElementById('moonPhaseIcon').innerHTML = svg;
+    }
+    function updateMoonPhaseIcon() {
+      const now = new Date();
+      const phase = SunCalc.getMoonIllumination(now).phase;
+      renderMoonPhaseIcon(phase);
+    }
+    setInterval(updateMoonPhaseIcon, 60 * 60 * 1000); // update every hour
+    updateMoonPhaseIcon();
+    // Large moon phase for both themes
+    function renderMoonPhaseMoon(phase) {
+      let svg = '';
+      if (document.body.className === 'light') {
+        // Daylight moon: match star color (#ffe066), 120x120 viewBox
+        if (phase < 0.02 || phase > 0.98) {
+          svg = `<svg class="moon-svg-phase" viewBox="0 0 120 120"><circle cx="60" cy="60" r="48" fill="#ffe066" stroke="#ffe066" stroke-width="6"/></svg>`;
+        } else if (phase < 0.24) {
+          svg = `<svg class="moon-svg-phase" viewBox="0 0 120 120"><circle cx="60" cy="60" r="48" fill="#ffe066"/><path d="M60 12 A48 48 0 0 1 60 108 A36 48 0 0 0 60 12" fill="#eae6c7"/></svg>`;
+        } else if (phase < 0.26) {
+          svg = `<svg class="moon-svg-phase" viewBox="0 0 120 120"><circle cx="60" cy="60" r="48" fill="#ffe066"/><rect x="60" y="12" width="48" height="96" fill="#eae6c7"/></svg>`;
+        } else if (phase < 0.49) {
+          svg = `<svg class="moon-svg-phase" viewBox="0 0 120 120"><circle cx="60" cy="60" r="48" fill="#ffe066"/><path d="M60 12 A48 48 0 0 1 60 108 A24 48 0 0 0 60 12" fill="#eae6c7"/></svg>`;
+        } else if (phase < 0.51) {
+          svg = `<svg class="moon-svg-phase" viewBox="0 0 120 120"><circle cx="60" cy="60" r="48" fill="#ffe066" stroke="#ffe066" stroke-width="6"/></svg>`;
+        } else if (phase < 0.74) {
+          svg = `<svg class="moon-svg-phase" viewBox="0 0 120 120"><circle cx="60" cy="60" r="48" fill="#ffe066"/><path d="M60 12 A48 48 0 0 0 60 108 A24 48 0 0 1 60 12" fill="#eae6c7"/></svg>`;
+        } else if (phase < 0.76) {
+          svg = `<svg class="moon-svg-phase" viewBox="0 0 120 120"><circle cx="60" cy="60" r="48" fill="#ffe066"/><rect x="12" y="12" width="48" height="96" fill="#eae6c7"/></svg>`;
+        } else {
+          svg = `<svg class="moon-svg-phase" viewBox="0 0 120 120"><circle cx="60" cy="60" r="48" fill="#ffe066"/><path d="M60 12 A48 48 0 0 0 60 108 A36 48 0 0 1 60 12" fill="#eae6c7"/></svg>`;
+        }
+      } else {
+        // Night moon: blue/white
+        if (phase < 0.02 || phase > 0.98) {
+          svg = `<svg class="moon-svg-phase" viewBox="0 0 120 120"><circle cx="60" cy="60" r="48" fill="#222" stroke="#bfcfff" stroke-width="6"/></svg>`;
+        } else if (phase < 0.24) {
+          svg = `<svg class="moon-svg-phase" viewBox="0 0 120 120"><circle cx="60" cy="60" r="48" fill="#bfcfff"/><path d="M60 12 A48 48 0 0 1 60 108 A36 48 0 0 0 60 12" fill="#222"/></svg>`;
+        } else if (phase < 0.26) {
+          svg = `<svg class="moon-svg-phase" viewBox="0 0 120 120"><circle cx="60" cy="60" r="48" fill="#bfcfff"/><rect x="60" y="12" width="48" height="96" fill="#222"/></svg>`;
+        } else if (phase < 0.49) {
+          svg = `<svg class="moon-svg-phase" viewBox="0 0 120 120"><circle cx="60" cy="60" r="48" fill="#bfcfff"/><path d="M60 12 A48 48 0 0 1 60 108 A24 48 0 0 0 60 12" fill="#222"/></svg>`;
+        } else if (phase < 0.51) {
+          svg = `<svg class="moon-svg-phase" viewBox="0 0 120 120"><circle cx="60" cy="60" r="48" fill="#fff" stroke="#bfcfff" stroke-width="6"/></svg>`;
+        } else if (phase < 0.74) {
+          svg = `<svg class="moon-svg-phase" viewBox="0 0 120 120"><circle cx="60" cy="60" r="48" fill="#bfcfff"/><path d="M60 12 A48 48 0 0 0 60 108 A24 48 0 0 1 60 12" fill="#222"/></svg>`;
+        } else if (phase < 0.76) {
+          svg = `<svg class="moon-svg-phase" viewBox="0 0 120 120"><circle cx="60" cy="60" r="48" fill="#bfcfff"/><rect x="12" y="12" width="48" height="96" fill="#222"/></svg>`;
+        } else {
+          svg = `<svg class="moon-svg-phase" viewBox="0 0 120 120"><circle cx="60" cy="60" r="48" fill="#bfcfff"/><path d="M60 12 A48 48 0 0 0 60 108 A36 48 0 0 1 60 12" fill="#222"/></svg>`;
+        }
+      }
+      const moon = document.querySelector('.moon');
+      if (moon) moon.innerHTML = svg;
+    }
+    function updateMoonPhaseMoon() {
+      const now = new Date();
+      const phase = SunCalc.getMoonIllumination(now).phase;
+      renderMoonPhaseMoon(phase);
+    }
+    setInterval(updateMoonPhaseMoon, 60 * 60 * 1000);
+    // Also update on theme switch
+  </script>
+</body>
+</html> 
